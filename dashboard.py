@@ -35,12 +35,16 @@ st.write("Real-Time Emission Dashboard")
 
 # st.pyplot(fig1)
 
+st.slider("Select a year", 2019, 2020, 2020)
+
 fig =go.Figure(go.Sunburst(
-    labels=["Eve", "Cain", "Seth", "Enos", "Noam", "Abel", "Awan", "Enoch", "Azura"],
-    parents=["", "Eve", "Eve", "Seth", "Seth", "Eve", "Eve", "Awan", "Eve" ],
-    values=[10, 14, 12, 10, 2, 6, 6, 4, 4],
+    labels=["Grid Electricity", "Clean Energy", "Dirty Energy", "Coal", "Natural Gas", "Wind", "Nuclear", "Solar", "Hydro", "Other"],
+    parents=["", "Grid Electricity", "Grid Electricity", "Dirty Energy", "Dirty Energy", "Clean Energy", "Clean Energy", "Clean Energy", "Clean Energy", "Clean Energy"],
+    values=[0, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11, 11],
 ))
 fig.update_layout(margin = dict(t=0, l=0, r=0, b=0))
+fig.update_traces(textinfo="label+percent parent")
+
 
 st.plotly_chart(fig)
 
