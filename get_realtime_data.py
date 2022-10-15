@@ -19,6 +19,11 @@ PP_ELECTRIC_PURCH = 'PP_Electric_Purch'
 
 CO2_POUNDS_PER_MWH = {'coal': 2230, 'natural_gas': 910}
 
+# CO2 Emission Calculations
+HEAT_CONVERSION_COEFFS = { 'natural_gas': 1.026, 'pellets': 20.89375, 'oat_hulls': 8.25, 'coal': 24.93 }
+CO2_CONVERSION_COEFFS = {  'natural_gas': 54.16, 'pellets': 136.025, 'oat_hulls': 154.37, 'coal': 105.88}
+PURCH_CO2_COEFF = 611.169
+
 def get_response(series_id, start):
     url = f'https://api.eia.gov/series/?api_key={API_KEY}&series_id={series_id}&start={start}'
     response = requests.get(url)
@@ -53,13 +58,10 @@ def get_grid_emissions():
     for key, value in electricity_breakdown.items():
         electricity_breakdown_percentages[key] = value / total
     latest_main_purch_el = get_latest_pi_data(PP_ELECTRIC_PURCH)['Value']
-    print(f'Latest main purch el: {latest_main_purch_el}')
     # get MWH from coal
     coal_mwh = latest_main_purch_el * electricity_breakdown_percentages['coal']
-    print(f'Coal MWH: {coal_mwh}')
     # get MWH from natural gas
     natural_gas_mwh = latest_main_purch_el * electricity_breakdown_percentages['natural_gas']
-    print(f'Natural gas MWH: {natural_gas_mwh}')
     # get CO2 from coal
     coal_co2 = coal_mwh * CO2_POUNDS_PER_MWH['coal']
     # get CO2 from natural gas
@@ -75,3 +77,22 @@ def get_latest_pi_data(name):
     data_url = point['Links']['Value']
     data = requests.get(data_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     return data
+
+def get_generated_emissions():
+    coal_pellet = toCO2_coal_pellet()
+
+def toCO2_ng():
+    pass
+
+def toCO2_pellets():
+    pass
+
+def toCO2_oat_hulls():
+    lastest_oat_hulls = get_latest_pi_data()
+
+def toCO2_coal_pellet():
+    CURRENT_PELLET_PERCENT = 0.195
+    lastest_coal_pellet = get_latest_pi_data('PP_SF-WIT-6044A')['Value']
+    emissions = lastest_coal_pellet * (CURRENT_PELLET_PERCENT * CO2_CONVERSION_COEFFS['pellets'] +
+                                        (1 - CURRENT_PELLET_PERCENT) * CO2_CONVERSION_COEFFS['coal'])
+    return emissions
