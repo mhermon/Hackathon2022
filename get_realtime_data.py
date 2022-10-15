@@ -114,8 +114,8 @@ def toCO2_oat_hulls():
 def toCO2_coal_pellet():
     CURRENT_PELLET_PERCENT = 0.195
     lastest_coal_pellet = get_latest_pi_data('PP_SF-WIT-6044A')['Value'] / 2
-    emissions = lastest_coal_pellet * (HEAT_CONVERSION_COEFFS['natural_gas'] * CURRENT_PELLET_PERCENT * CO2_CONVERSION_COEFFS['pellets'] +
+    emissions = lastest_coal_pellet * (HEAT_CONVERSION_COEFFS['pellets'] * CURRENT_PELLET_PERCENT * CO2_CONVERSION_COEFFS['pellets'] +
                                         HEAT_CONVERSION_COEFFS['coal'] * (1 - CURRENT_PELLET_PERCENT) * CO2_CONVERSION_COEFFS['coal'])
     return emissions
-
+        
 # print(get_generated_emissions())
