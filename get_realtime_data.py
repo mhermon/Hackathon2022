@@ -79,20 +79,43 @@ def get_latest_pi_data(name):
     return data
 
 def get_generated_emissions():
+    '''returns current total generated co2'''
     coal_pellet = toCO2_coal_pellet()
+    pellet = toCO2_pellets()
+    ng = toCO2_ng()
+    oat_hulls = toCO2_oat_hulls()
+    total = coal_pellet + pellet + ng + oat_hulls
+    return {'coal_pellet': coal_pellet, 'pellet': pellet, 'ng': ng, 'oat_hulls': oat_hulls, 'total': total}
 
 def toCO2_ng():
-    pass
+    main_ng_names = ['PP_TB1_2_TB1_GAS_FLOW', 'HBLR_GAS_FLOW', 'PP_B7_Gas_Flow_Adj', 'PP_B8_Gas_Flow_Adj', 'PP_B10_FLT_235_FT', 'PP_BLR12_FT_006_KSCFH',
+                 'PP_GG1_FUEL_FLOW', 'PP_GG2_FUEL_FLOW', 'PP_GG3_FUEL_FLOW', 'PP_GG4_FUEL_FLOW', 'PP_AF-XI-8220A']
+    total = 0.
+    for i, name in enumerate(main_ng_names):
+        latest = get_latest_pi_data(name)
+        # add columns 1,2,3,4,6,11 of main_ng_df to main_ng_df['Sum']
+        if i in [0,1,2,3,5,10]:
+            total += latest['Value'] * HEAT_CONVERSION_COEFFS['natural_gas'] * CO2_CONVERSION_COEFFS['natural_gas']
+        # add columns 5,7,8,9,10 of main_ng_df to main_ng_df['CO2']
+        else:
+            total += latest['Value']/1000 * HEAT_CONVERSION_COEFFS['natural_gas'] * CO2_CONVERSION_COEFFS['natural_gas']
+    return total
 
 def toCO2_pellets():
-    pass
+    lastest_pellets = get_latest_pi_data('PP_CHS_B10WeighBelt_MvgAvg')['Value'] / 2
+    emissions = lastest_pellets * HEAT_CONVERSION_COEFFS['pellets'] * CO2_CONVERSION_COEFFS['pellets']
+    return emissions
 
 def toCO2_oat_hulls():
-    lastest_oat_hulls = get_latest_pi_data()
+    lastest_oat_hulls = get_latest_pi_data('PP_BIO_Weight')['Value'] / 2
+    emissions = lastest_oat_hulls * HEAT_CONVERSION_COEFFS['oat_hulls'] * CO2_CONVERSION_COEFFS['oat_hulls']
+    return emissions
 
 def toCO2_coal_pellet():
     CURRENT_PELLET_PERCENT = 0.195
-    lastest_coal_pellet = get_latest_pi_data('PP_SF-WIT-6044A')['Value']
-    emissions = lastest_coal_pellet * (CURRENT_PELLET_PERCENT * CO2_CONVERSION_COEFFS['pellets'] +
-                                        (1 - CURRENT_PELLET_PERCENT) * CO2_CONVERSION_COEFFS['coal'])
+    lastest_coal_pellet = get_latest_pi_data('PP_SF-WIT-6044A')['Value'] / 2
+    emissions = lastest_coal_pellet * (HEAT_CONVERSION_COEFFS['natural_gas'] * CURRENT_PELLET_PERCENT * CO2_CONVERSION_COEFFS['pellets'] +
+                                        HEAT_CONVERSION_COEFFS['coal'] * (1 - CURRENT_PELLET_PERCENT) * CO2_CONVERSION_COEFFS['coal'])
     return emissions
+
+# print(get_generated_emissions())

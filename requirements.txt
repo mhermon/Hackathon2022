@@ -3,5 +3,4 @@ ipykernel
 openpyxl
 requests
 streamlit
-Image
 plotly
