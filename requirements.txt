@@ -1,0 +1,6 @@
+pandas
+ipykernel
+openpyxl
+requests
+streamlit
+Image
