@@ -69,9 +69,9 @@ def get_grid_emissions():
 def get_latest_pi_data(name):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
     url = base_url + name
-    query = requests.get(url, auth=(USERNAME, PASSWORD), HEADERS=HEADERS).json()
+    query = requests.get(url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     self_url = query['Items'][0]['Links']['Self']
-    point = requests.get(self_url, auth=(USERNAME, PASSWORD), HEADERS=HEADERS).json()
+    point = requests.get(self_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     data_url = point['Links']['Value']
-    data = requests.get(data_url, auth=(USERNAME, PASSWORD), HEADERS=HEADERS).json()
+    data = requests.get(data_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     return data
