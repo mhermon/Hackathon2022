@@ -1,2 +1,2 @@
-USERNAME = "ryyang"
-PASSWORD = "Snakeray{}_2230"
+USERNAME = ""
+PASSWORD = ""
