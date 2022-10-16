@@ -1,7 +1,8 @@
+from os import access
 import requests
 from datetime import datetime, timedelta
 import pandas as pd
-from account_info import USERNAME, PASSWORD
+import account_info
 
 API_KEY = "ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ"
 
@@ -25,7 +26,7 @@ CO2_CONVERSION_COEFFS = {  'natural_gas': 54.16, 'pellets': 136.025, 'oat_hulls'
 PURCH_CO2_COEFF = 611.169
 
 def get_response(series_id, start):
-    url = f'https://api.eia.gov/series/?api_key={API_KEY}&series_id={series_id}&start={start}'
+    url = f'https://api.eia.gov/series/?api_key=ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ&series_id={series_id}&start={start}'
     response = requests.get(url)
     return response.json()
 
@@ -58,19 +59,30 @@ def get_grid_emissions():
     for key, value in electricity_breakdown.items():
         electricity_breakdown_percentages[key] = value / total
     latest_main_purch_el = get_latest_pi_data(PP_ELECTRIC_PURCH)['Value']
+    # print(f'Latest main purch el: {latest_main_purch_el}')
+    emissions = {}
     # get MWH from coal
-    coal_mwh = latest_main_purch_el * electricity_breakdown_percentages['coal']
+    emissions['Coal'] = latest_main_purch_el * electricity_breakdown_percentages['coal']
+    # print(f'Coal MWH: {coal_mwh}')
     # get MWH from natural gas
-    natural_gas_mwh = latest_main_purch_el * electricity_breakdown_percentages['natural_gas']
+    emissions['Natural Gas'] = latest_main_purch_el * electricity_breakdown_percentages['natural_gas']
+    # print(f'Natural gas MWH: {natural_gas_mwh}')
     # get CO2 from coal
-    coal_co2 = coal_mwh * CO2_POUNDS_PER_MWH['coal']
+    emissions['Coal'] = [emissions['Coal'] * CO2_POUNDS_PER_MWH['coal']]
     # get CO2 from natural gas
-    natural_gas_co2 = natural_gas_mwh * CO2_POUNDS_PER_MWH['natural_gas']
-    return {'coal': coal_co2, 'natural_gas': natural_gas_co2}
+    emissions['Natural Gas'] = [emissions['Natural Gas'] * CO2_POUNDS_PER_MWH['natural_gas']]
+    # Create a dataframe from emissions with columns as keys and rows as values
+    df_emissions = pd.DataFrame.from_dict(emissions, orient="index", columns=["Emissions"])
+    # make the index a column
+    df_emissions.reset_index(inplace=True)
+    # rename the index column
+    df_emissions.rename(columns={"index": "Category"}, inplace=True)
+    return df_emissions
 
 def get_latest_pi_data(name):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
     url = base_url + name
+    USERNAME, PASSWORD = account_info.getLogin()
     query = requests.get(url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     self_url = query['Items'][0]['Links']['Self']
     point = requests.get(self_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
@@ -84,8 +96,11 @@ def get_generated_emissions():
     pellet = toCO2_pellets()
     ng = toCO2_ng()
     oat_hulls = toCO2_oat_hulls()
-    total = coal_pellet + pellet + ng + oat_hulls
-    return {'coal_pellet': coal_pellet, 'pellet': pellet, 'ng': ng, 'oat_hulls': oat_hulls, 'total': total}
+    emissions = {'Coal Pellet': coal_pellet, 'Pellet': pellet, 'Natural Gas': ng, 'Oat Hulls': oat_hulls}
+    emissions_df = pd.DataFrame.from_dict(emissions, orient="index", columns=["Emissions"])
+    emissions_df.reset_index(inplace=True)
+    emissions_df.rename(columns={"index": "Category"}, inplace=True)
+    return emissions_df
 
 def toCO2_ng():
     main_ng_names = ['PP_TB1_2_TB1_GAS_FLOW', 'HBLR_GAS_FLOW', 'PP_B7_Gas_Flow_Adj', 'PP_B8_Gas_Flow_Adj', 'PP_B10_FLT_235_FT', 'PP_BLR12_FT_006_KSCFH',
