@@ -2,6 +2,7 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 import account_info
+import streamlit as st
 
 API_KEY = "ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ"
 
@@ -28,10 +29,13 @@ START_TIME = '365d'
 END_TIME = '0d'
 INTERVAL = '1d'
 
+USERNAME = st.secrets['username']
+PASSWORD = st.secrets['password']
+
 def get_historical_pi_data(name, start_time, end_time, interval):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
     url = base_url + name
-    USERNAME, PASSWORD = account_info.getLogin()
+    # USERNAME, PASSWORD = account_info.getLogin()
     query = requests.get(url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     self_url = query['Items'][0]['Links']['Self']
     point = requests.get(self_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
@@ -102,11 +106,33 @@ def get_historical_df(names, startTime, endTime, interval):
         df[name] = pd.DataFrame(vals)
     return df
 
+def get_historical_hour():
+    global START_TIME, INTERVAL
+    temp_START_TIME = START_TIME
+    temp_INTERVAL = INTERVAL
+    START_TIME = '1h'
+    INTERVAL = '1h'
+
+    df = pd.DataFrame()
+
+    df['gen'] = get_gen_historical_load()
+    df['purch'] = get_purch_historical_emissions()
+
+    START_TIME 
+
+    # now = datetime.now()
+    # time_one_hour_ago = now - timedelta(hours=1)
+    # # Convert to format YYYMMDDTHHZ
+    # time_one_hour_ago = time_one_hour_ago.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # time_now = now.strftime("%Y-%m-%dT%H:%M:%SZ")
+    # df = get_historical_df(PI_NAMES, time_one_hour_ago, time_now, '1h')
+    return df
+
 def get_gen_historical_emissions():
     df = pd.DataFrame()
     blr11_pellets, blr11_coal = get_coal_pellets_historical_emissions()
     df['Time'] = get_historical_df(['PP_Electric_Purch'], START_TIME, END_TIME, INTERVAL)['Time']
-    df['Purch'] = get_purch_historical_emissions()
+    df['Purchase'] = get_purch_historical_emissions()
     df['Pellets'] = get_pellets_historical_emissions() + blr11_pellets
     df['Oat Hulls'] = get_oat_hulls_historical_emissions()
     df['Coal'] = blr11_coal
@@ -167,6 +193,3 @@ def get_ng_historical_emissions():
 
     main_ng_df['CO2'] = main_ng_df['Sum'] * HEAT_CONVERSION_COEFFS['natural_gas'] * CO2_CONVERSION_COEFFS['natural_gas']
     return main_ng_df['CO2']
-
-# print(get_purch_historical_data())
-#print(get_historical_emissions())

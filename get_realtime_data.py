@@ -3,6 +3,7 @@ import requests
 from datetime import datetime, timedelta
 import pandas as pd
 import account_info
+import streamlit as st
 
 API_KEY = "ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ"
 
@@ -24,6 +25,9 @@ CO2_POUNDS_PER_MWH = {'coal': 2230, 'natural_gas': 910}
 HEAT_CONVERSION_COEFFS = { 'natural_gas': 1.026, 'pellets': 20.89375, 'oat_hulls': 8.25, 'coal': 24.93 }
 CO2_CONVERSION_COEFFS = {  'natural_gas': 54.16, 'pellets': 136.025, 'oat_hulls': 154.37, 'coal': 105.88}
 PURCH_CO2_COEFF = 611.169
+
+USERNAME = st.secrets['username']
+PASSWORD = st.secrets['password']
 
 def get_response(series_id, start):
     url = f'https://api.eia.gov/series/?api_key=ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ&series_id={series_id}&start={start}'
@@ -82,7 +86,7 @@ def get_grid_emissions():
 def get_latest_pi_data(name):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
     url = base_url + name
-    USERNAME, PASSWORD = account_info.getLogin()
+    # USERNAME, PASSWORD = account_info.getLogin()
     query = requests.get(url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     self_url = query['Items'][0]['Links']['Self']
     point = requests.get(self_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()

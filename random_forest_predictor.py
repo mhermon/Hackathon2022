@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-import os
 import requests
 from datetime import datetime, timedelta
 import numpy as np

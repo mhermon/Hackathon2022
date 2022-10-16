@@ -1,6 +1,8 @@
 # API key saved locally
 api_key.json
 
+.streamlit/
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
