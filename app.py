@@ -1,4 +1,3 @@
-import pickle
 import streamlit as st
 import streamlit as st
 import pandas as pd
@@ -10,7 +9,7 @@ import account_info
 from plotly.subplots import make_subplots
 import plotly.graph_objects as go
 import get_historic_data as ghd
-import pickle
+import load_model as lm
 
 def dashboard():
     st.title("Carbon Footprint Emissions - University of Iowa Main Campus")
@@ -58,7 +57,6 @@ def dashboard():
         combined_df = pd.concat([df_grid_emissions, df_gen_emissions])
         fig2 = px.bar(combined_df, x="Source", y="Emissions", color="Category",
             color_discrete_map={'Coal':'#F0C492', 'Natural Gas':'#F09287', 'Coal Pellet':'#C4F09E', 'Pellet':'#A1D8F0', 'Oat Hulls':'#E6B7F0'},)
-            # color_discrete_map={'Coal':'#5A5A5A', 'Natural Gas':'#FF6961', 'Coal Pellet':'#A7C7E7', 'Pellet':'#fdfd96', 'Oat Hulls':'blue'},)
         fig2.update_layout(xaxis_title="Source of Energy", yaxis_title="Emissions (kgs CO2e)")
         fig2.update_layout(legend_title_text = "Energy Source")
         fig2.update_layout(template="plotly_white")
@@ -105,27 +103,36 @@ def historical():
     graph_breakdown(gen_historical_emissions)
 
 def login(username, password):
-    base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query'
-    url = base_url
-    query = requests.get(url, auth=(username, password))
-    if query.status_code != 200:
-        st.warning("Login Error!")
-        return
-    account_info.setLogin(username, password)
-    st.success("Login Successful! Please click the dropdown to access the dashboards.")
+  base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query'
+  url = base_url
+  query = requests.get(url, auth=(username, password))
+  if query.status_code != 200:
+      st.warning("Login Error!")
+      return
+  account_info.setLogin(username, password)
+  st.success("Login Successful! Please click the dropdown to access the dashboards.")
 
 def toggle_login():
-    st.title("Dashboard Login")
-    placeholder = st.empty()
-    with placeholder.container():
-        username = st.text_input("UIOWA Username or Email")
-        password = st.text_input("UIOWA Password", type="password")
-        # st.session_state['username'] = username
-        # st.session_state['password'] = password
+  st.title("Dashboard Login")
+  placeholder = st.empty()
+  with placeholder.container():
+      username = st.text_input("UIOWA Username or Email")
+      password = st.text_input("UIOWA Password", type="password")
 
-        btn = st.button("Login")
-        if btn:
-            login(username, password)
+      btn = st.button("Login")
+      if btn:
+          login(username, password)
+
+def model():
+    st.title("Predicted Electricity Load For Next 12 Hours")
+    st.write("The solid line represents total electricity load from the past 24 hours. The dotted points represents predicted values.")
+    past, predicted = lm.make_predictions()
+    fig1 = px.line(past, x='Time', y='Load')
+    fig1.update_traces(line=dict(color = 'rgba(50,50,50,0.2)'))
+
+    fig2 = px.scatter(predicted, x='Time', y='Load')
+    fig3 = go.Figure(fig1.data + fig2.data)
+    fig3.show()
 
 # Driver Code
 st.set_page_config(
@@ -138,7 +145,7 @@ page_names_to_funcs = {
     "Login Page": toggle_login,
     "Real-Time Dashboard": dashboard,
     "Historical Analysis": historical,
-    ""
+    "Predictive Model": model,
 }
 
 selected_page = st.sidebar.selectbox("Select a page", page_names_to_funcs.keys())
