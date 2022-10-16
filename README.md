@@ -12,6 +12,11 @@ Install Requirements
 Run Streamlit   
 `streamlit run app.py`
 
+Requires UIOWA login in order to access PI API.   
+In directory `.streamlit/secrets.toml` :   
+`username = "<your-username>"`   
+`password = "<your-password>"`
+
 ## Features
 
 ## Credits
