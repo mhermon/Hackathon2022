@@ -104,28 +104,28 @@ def historical():
     graph_historic_data(gen_historical_emissions, 'Generated Electricity vs Emissions' , 'Generated', 'Total Emissions', 'Generated Electricity (MWh)', 'CO2 Emissions (Kg)')
     graph_breakdown(gen_historical_emissions)
 
-# def login(username, password):
-#     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query'
-#     url = base_url
-#     query = requests.get(url, auth=(username, password))
-#     if query.status_code != 200:
-#         st.warning("Login Error")
-#         return
-#     account_info.setLogin(username, password)
-#     st.success("Login Successful!")
+def login(username, password):
+    base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query'
+    url = base_url
+    query = requests.get(url, auth=(username, password))
+    if query.status_code != 200:
+        st.warning("Login Error!")
+        return
+    account_info.setLogin(username, password)
+    st.success("Login Successful! Please click the dropdown to access the dashboards.")
 
-# def toggle_login():
-#     st.title("Dashboard Login")
-#     placeholder = st.empty()
-#     with placeholder.container():
-#         username = st.text_input("UIOWA Username or Email")
-#         password = st.text_input("UIOWA Password", type="password")
-#         # st.session_state['username'] = username
-#         # st.session_state['password'] = password
+def toggle_login():
+    st.title("Dashboard Login")
+    placeholder = st.empty()
+    with placeholder.container():
+        username = st.text_input("UIOWA Username or Email")
+        password = st.text_input("UIOWA Password", type="password")
+        # st.session_state['username'] = username
+        # st.session_state['password'] = password
 
-#         btn = st.button("Login")
-#         if btn:
-#             login(username, password)
+        btn = st.button("Login")
+        if btn:
+            login(username, password)
 
 # Driver Code
 st.set_page_config(
@@ -135,9 +135,10 @@ st.set_page_config(
 )
 
 page_names_to_funcs = {
-    # "Login Page": toggle_login,
+    "Login Page": toggle_login,
     "Real-Time Dashboard": dashboard,
     "Historical Analysis": historical,
+    ""
 }
 
 selected_page = st.sidebar.selectbox("Select a page", page_names_to_funcs.keys())
