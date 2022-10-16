@@ -137,8 +137,7 @@ st.set_page_config(
 page_names_to_funcs = {
     "Login Page": toggle_login,
     "Real-Time Dashboard": dashboard,
-    "Historical Analysis": historical,
-    ""
+    "Historical Analysis": historical
 }
 
 selected_page = st.sidebar.selectbox("Select a page", page_names_to_funcs.keys())
