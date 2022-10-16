@@ -9,8 +9,8 @@ import streamlit as st
 
 HEADERS = {'Content-Type': 'application/json'}
 
-USERNAME = st.secrets("username")
-PASSWORD = st.secrets("password")
+USERNAME = st.secrets["username"]
+PASSWORD = st.secrets["password"]
 
 def get_historical_pi_data(name, start_time, end_time, interval):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
