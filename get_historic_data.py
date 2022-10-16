@@ -1,7 +1,7 @@
 import requests
 from datetime import datetime, timedelta
 import pandas as pd
-from account_info import USERNAME, PASSWORD
+import account_info
 
 API_KEY = "ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ"
 
@@ -24,13 +24,14 @@ HEAT_CONVERSION_COEFFS = { 'natural_gas': 1.026, 'pellets': 20.89375, 'oat_hulls
 CO2_CONVERSION_COEFFS = {  'natural_gas': 54.16, 'pellets': 136.025, 'oat_hulls': 154.37, 'coal': 105.88}
 PURCH_CO2_COEFF = 611.169
 
-START_TIME = '52w'
-END_TIME = '1d'
+START_TIME = '365d'
+END_TIME = '0d'
 INTERVAL = '1d'
 
 def get_historical_pi_data(name, start_time, end_time, interval):
     base_url = 'https://itsnt2259.iowa.uiowa.edu/piwebapi/search/query?q=name:'
     url = base_url + name
+    USERNAME, PASSWORD = account_info.getLogin()
     query = requests.get(url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     self_url = query['Items'][0]['Links']['Self']
     point = requests.get(self_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
@@ -39,6 +40,54 @@ def get_historical_pi_data(name, start_time, end_time, interval):
     data = requests.get(data_url, auth=(USERNAME, PASSWORD), headers=HEADERS).json()
     return data
 
+def get_response(series_id, start):
+    url = f'https://api.eia.gov/series/?api_key=ayNClqmZuOOBeL6lFjA348UfsA0jpzazy8pjyXsQ&series_id={series_id}&start={start}'
+    response = requests.get(url)
+    return response.json()
+
+def get_historical_miso_electricity_data():
+    now = datetime.now()
+    # Get the time 24 hours ago
+    time_one_year_ago = now - timedelta(days=365)
+    # Convert to format YYYMMDDTHHZ
+    time_one_year_ago = time_one_year_ago.strftime("%Y%m%dT%HZ")
+
+    responses = {}
+    for name, series_id in API_IDS.items():
+        responses[name] = get_response(series_id, time_one_year_ago)
+
+    df = pd.DataFrame()
+    electricity_breakdown = {}
+    for name, response in responses.items():
+        data = response['series'][0]['data']
+        times = [x[0] for x in data]
+        values = [x[1] for x in data]
+        electricity_breakdown[name] = values
+    df['Time'] = times
+    for name, values in electricity_breakdown.items():
+        df[name] = values
+    df['wind_percent'] = df['wind'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['solar_percent'] = df['solar'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['hydro_percent'] = df['hydro'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['coal_percent'] = df['coal'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['natural_gas_percent'] = df['natural_gas'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['nuclear_percent'] = df['nuclear'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['other_percent'] = df['other'] / (df['wind'] + df['solar'] + df['hydro'] + df['coal'] + df['natural_gas'] + df['nuclear'] + df['other'])
+    df['date'] = pd.to_datetime(df['Time'], format='%Y%m%dT%HZ').dt.date
+    df.drop(columns=['Time', 'wind', 'solar', 'hydro', 'coal', 'natural_gas', 'nuclear', 'other'], inplace=True)
+    df = df.groupby('date').mean()
+    df.reset_index(inplace=True)
+    return df
+
+def get_historical_miso_co2_data():
+    df_miso_percents = get_historical_miso_electricity_data()
+    df_purchased_mwhs = get_purch_historical_load()
+    df_purchased_mwhs['date'] = pd.to_datetime(df_purchased_mwhs['Time']).dt.date
+    df_comb = pd.merge(df_miso_percents, df_purchased_mwhs, on=['date'], how='outer')
+    # drop rows with null values
+    df_comb.dropna(inplace=True)
+    df_comb['emissions'] = df_comb['PP_Electric_Purch'] * df_comb['coal_percent'] * CO2_POUNDS_PER_MWH['coal'] + df_comb['PP_Electric_Purch'] * df_comb['natural_gas_percent'] * CO2_POUNDS_PER_MWH['natural_gas']
+    return df_comb
 
 def get_historical_df(names, startTime, endTime, interval):
     df = pd.DataFrame()
@@ -53,7 +102,7 @@ def get_historical_df(names, startTime, endTime, interval):
         df[name] = pd.DataFrame(vals)
     return df
 
-def get_historical_emissions():
+def get_gen_historical_emissions():
     df = pd.DataFrame()
     blr11_pellets, blr11_coal = get_coal_pellets_historical_emissions()
     df['Time'] = get_historical_df(['PP_Electric_Purch'], START_TIME, END_TIME, INTERVAL)['Time']
@@ -62,7 +111,16 @@ def get_historical_emissions():
     df['Oat Hulls'] = get_oat_hulls_historical_emissions()
     df['Coal'] = blr11_coal
     df['Natural Gas'] = get_ng_historical_emissions()
+    df['date'] = pd.to_datetime(df['Time']).dt.date
+    df['Generated'] = get_gen_historical_load()
+    df['Total Emissions'] = df['Pellets'] + df['Oat Hulls'] + df['Coal'] + df['Natural Gas']
     return df
+
+
+def get_purch_historical_load():
+    main_purch_el_names = ['PP_Electric_Purch']
+    main_purch_el_df = get_historical_df(main_purch_el_names, START_TIME, END_TIME, INTERVAL)
+    return main_purch_el_df
 
 def get_purch_historical_emissions():
     main_purch_el_names = ['PP_Electric_Purch']
@@ -70,11 +128,10 @@ def get_purch_historical_emissions():
     main_purch_el_df['CO2'] = main_purch_el_df['PP_Electric_Purch'] * PURCH_CO2_COEFF
     return main_purch_el_df['CO2']
 
-# def get_gen_historical_emissions():
-#     main_gen_el_names = ['PP_Electric_Gen']
-#     main_gen_el_df = get_historical_df(main_gen_el_names, START_TIME, END_TIME, INTERVAL)
-#     return main_gen_el_df
-
+def get_gen_historical_load():
+    main_gen_el_names = ['PP_Electric_Gen']
+    main_gen_el_df = get_historical_df(main_gen_el_names, START_TIME, END_TIME, INTERVAL)
+    return main_gen_el_df['PP_Electric_Gen']
 
 def get_pellets_historical_emissions():
     # Blr 10 Pellets
@@ -112,5 +169,4 @@ def get_ng_historical_emissions():
     return main_ng_df['CO2']
 
 # print(get_purch_historical_data())
-print(get_historical_emissions())
-
+#print(get_historical_emissions())
