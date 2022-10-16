@@ -132,7 +132,7 @@ def model():
 
     fig2 = px.scatter(predicted, x='Time', y='Load')
     fig3 = go.Figure(fig1.data + fig2.data)
-    fig3.show()
+    st.plotly_chart(fig3, use_container_width=True)
 
 # Driver Code
 st.set_page_config(
