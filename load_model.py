@@ -74,10 +74,10 @@ def make_predictions(hours=12):
         predictions = reconstructed_model.predict(testX)
         print(predictions)
         all_preds.append(predictions[0,0])
-    past_xs = [x for x in range(len(vals)-1)]
+    past_xs = [x-len(vals)+1 for x in range(len(vals)-1)]
     past_load = vals[:-1]
     past = pd.DataFrame({'Time': past_xs, 'Load': past_load})
-    pred_xs = [x+len(vals) for x in range(len(all_preds))]
+    pred_xs = [x for x in range(len(all_preds))]
     preds = pd.DataFrame({'Time': pred_xs, 'Load': all_preds})
     return past, preds
     
