@@ -125,13 +125,14 @@ def toggle_login():
 
 def model():
     st.title("Predicted Electricity Load For Next 12 Hours")
-    st.write("The solid line represents total electricity load from the past 24 hours. The dotted points represents predicted values.")
+    st.write("The solid line represents total electricity load from the past 24 hours. The dotted points represents predicted values. Values further into the future will likely be less accurate.")
     past, predicted = lm.make_predictions()
     fig1 = px.line(past, x='Time', y='Load')
-    fig1.update_traces(line=dict(color = 'rgba(50,50,50,0.2)'))
+    fig1.update_traces(line=dict(color = 'rgba(255,50,50,0.8)'))
 
     fig2 = px.scatter(predicted, x='Time', y='Load')
     fig3 = go.Figure(fig1.data + fig2.data)
+    fig3.update_layout(xaxis_title="Hours from now", yaxis_title="Electricity Load (MWH)")
     st.plotly_chart(fig3, use_container_width=True)
 
 # Driver Code
